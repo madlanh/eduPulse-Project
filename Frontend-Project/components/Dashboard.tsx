@@ -36,7 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, defaultClassId }) => {
     setLoadingQuiz(true);
     
     // PERBAIKAN: Gunakan encodeURIComponent untuk keamanan URL
-    const url = `http://127.0.0.1:8000/api/student/quiz_detail?user_id=${user.user_id}&class_id=${encodeURIComponent(selectedClassId)}`;
+    const url = `/api/student/quiz_detail?user_id=${user.user_id}&class_id=${encodeURIComponent(selectedClassId)}`;
     
     fetch(url)
       .then(res => {
