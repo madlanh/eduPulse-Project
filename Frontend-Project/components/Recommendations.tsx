@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StudentData } from '../types';
-import { BrainCircuit, RefreshCw, Book, Video, Users, CheckCircle, Zap } from 'lucide-react';
+import { BrainCircuit, RefreshCw, Book, Video, Users, CheckCircle, Zap, ExternalLink, PlayCircle, BookOpen } from 'lucide-react';
 
 interface RecProps {
   user: StudentData;
@@ -143,14 +143,33 @@ const Recommendations: React.FC<RecProps> = ({ user }) => {
                 </div>
             </div>
             <h3 className="font-bold text-slate-800 mb-4">Materi Terkurasi</h3>
-            <ul className="space-y-3">
-              {result?.materials.map((item, idx) => (
-                <li key={idx} className="flex items-start bg-slate-50 p-3 rounded border border-slate-100">
-                  <span className="mr-3 text-red-500 font-bold">▶</span>
-                  <span className="text-slate-700 text-sm">{item}</span>
-                </li>
+            <div className="space-y-3">
+              {result?.materials.map((material: any, idx: number) => (
+                <a 
+                  key={idx}
+                  href={material.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center p-3 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-lg transition-colors group cursor-pointer"
+                >
+                  <div className={`p-2 rounded-full mr-3 ${
+                    material.type === 'Video' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {/* Icon berubah sesuai tipe */}
+                    {material.type === 'Video' ? <PlayCircle className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-700 group-hover:text-red-700">
+                      {material.title}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Klik untuk buka materi ({material.type})
+                    </p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-red-400" />
+                </a>
               ))}
-            </ul>
+            </div>
         </div>
       </div>
     </div>
