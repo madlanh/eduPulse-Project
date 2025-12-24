@@ -1,0 +1,15 @@
+# Abaikan folder sampah nodejs (Frontend)
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Abaikan folder sampah python (Backend)
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Abaikan file sistem
+.DS_Store
