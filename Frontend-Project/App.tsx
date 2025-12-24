@@ -20,7 +20,7 @@ const App: React.FC = () => {
 
     try {
       // Fetch ke Backend
-      const response = await fetch(`http://127.0.0.1:8000/api/student/${inputUserId}`);
+      const response = await fetch(`/api/student/${inputUserId}`);
       
       if (!response.ok) {
         throw new Error("User ID tidak ditemukan di sistem (Backend 404).");
