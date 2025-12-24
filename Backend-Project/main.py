@@ -180,30 +180,83 @@ class RecommendationRequest(BaseModel):
 
 @app.post("/api/recommendation")
 def get_ai_recommendation(req: RecommendationRequest):
+    # 1. Ambil Data Mahasiswa
     student = user_df[user_df["userid"] == req.user_id]
-    cluster_type = "At Risk / Passive"
+    
+    # Default Values
+    cluster_type = "Unknown"
+    weakest_course = "Umum"
+    lowest_score = 0
+    
     if not student.empty:
         cluster_id = student.iloc[0]["cluster"]
         cluster_type = cluster_labels.get(cluster_id, "Unknown")
+        
+        # 2. LOGIKA BARU: Cari Mata Kuliah Terlemah (Nilai Terendah)
+        student_scores = score_df[score_df["userid"] == req.user_id]
+        if not student_scores.empty:
+            # Hitung rata-rata per matkul, cari yang paling kecil
+            course_avg = student_scores.groupby("coursefullname")['final_quiz_grade'].mean().sort_values()
+            if not course_avg.empty:
+                weakest_course_raw = course_avg.index[0] # Nama matkul terendah
+                lowest_score = course_avg.iloc[0]
+                weakest_course = clean_course_name(weakest_course_raw)
 
-    rec = {"status": cluster_type, "match_percentage": 0, "strategy": "", "materials": [], "tips": ""}
+    # 3. Personalisasi Pesan
+    rec = {
+        "status": cluster_type, 
+        "match_percentage": 0, 
+        "strategy": "", 
+        "materials": [], 
+        "tips": "",
+        "focus_subject": weakest_course # Kirim info matkul terlemah ke Frontend
+    }
 
+    # Logika Konten (Lebih Dinamis)
+    style = req.learning_style.title() # Visual, Auditory, etc.
+    
     if "High Performer" in cluster_type:
-        rec.update({"match_percentage": 95, "strategy": "Pengayaan", "tips": "Fokus portofolio."})
-        rec['materials'] = [f"Proyek: {req.interest}", "LeetCode Hard"]
+        rec["match_percentage"] = 95
+        rec["strategy"] = "Maintenance & Enrichment"
+        rec["tips"] = f"Nilai {weakest_course} Anda sudah baik, tapi bisa ditingkatkan menjadi sempurna."
+        # Materi Advanced
+        rec['materials'] = [
+            {"title": f"Proyek Lanjut: {req.interest}", "type": "Project"},
+            {"title": f"Jurnal Penelitian {weakest_course}", "type": "Article"}
+        ]
     elif "Active" in cluster_type:
-        rec.update({"match_percentage": 88, "strategy": "Konsistensi", "tips": "Pertahankan."})
-        rec['materials'] = [f"Studi Kasus: {req.interest}", "Konsep Lanjut"]
+        rec["match_percentage"] = 88
+        rec["strategy"] = "Optimasi Konsistensi"
+        rec["tips"] = f"Fokus pada mata kuliah '{weakest_course}' (Skor: {fix_grade_value(lowest_score)}) untuk menaikkan IPK."
+        rec['materials'] = [
+            {"title": f"Latihan Soal Harian {weakest_course}", "type": "Practice"},
+            {"title": f"Studi Kasus {req.interest}", "type": "Case Study"}
+        ]
     elif "Balanced" in cluster_type:
-        rec.update({"match_percentage": 75, "strategy": "Intensitas", "tips": "Latihan soal."})
-        rec['materials'] = [f"Kursus: {req.interest}", "Latihan Medium"]
-    else:
-        rec.update({"match_percentage": 60, "strategy": "Intervensi", "tips": "Kejar materi."})
-        rec['materials'] = ["Video Ringkasan", "Manajemen Waktu"]
+        rec["match_percentage"] = 75
+        rec["strategy"] = "Deep Dive Focus"
+        rec["tips"] = f"Anda cukup stabil, tapi perlu perhatian ekstra di {weakest_course}."
+        rec['materials'] = [
+            {"title": f"Video Konsep Dasar {weakest_course}", "type": "Video"},
+            {"title": f"Rangkuman {weakest_course} (PDF)", "type": "Document"}
+        ]
+    else: # At Risk / Passive
+        rec["match_percentage"] = 60
+        rec["strategy"] = "Intervensi Dasar"
+        rec["tips"] = f"Bahaya! Nilai {weakest_course} sangat rendah. Segera pelajari ulang dasar-dasarnya."
+        rec['materials'] = [
+            {"title": f"Tutorial Pemula {weakest_course} Bahasa Indonesia", "type": "Video"},
+            {"title": f"Mentoring Teman Sebaya: {weakest_course}", "type": "Community"}
+        ]
 
-    style = req.learning_style.lower()
-    suffix = "(Video)" if style == "visual" else "(Podcast)" if style == "auditory" else "(Praktik)"
-    rec['materials'] = [f"{m} {suffix}" for m in rec['materials']]
+    # 4. Fitur "Smart Link" (Generate Link Youtube/Google)
+    for mat in rec['materials']:
+        query = mat['title'].replace(" ", "+")
+        if mat['type'] == "Video":
+            mat['url'] = f"https://www.youtube.com/results?search_query={query}"
+        else:
+            mat['url'] = f"https://www.google.com/search?q={query}"
+
     return rec
 
 # --- ADMIN ---
